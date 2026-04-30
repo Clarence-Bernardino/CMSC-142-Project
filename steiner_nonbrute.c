@@ -247,8 +247,8 @@ void buildSteinerTree() {
 // STEP 4: PRUNE UNNECESSARY LEAF NODES
 // ─────────────────────────────────────────────
 // After building the Steiner graph, some non-terminal
-// nodes might be "dangling" (only one connection).
-// They add cost but connect nothing useful, so remove them.
+// nodes might be "dangling" (only one connection)
+//  add cost but connect nothing useful, so remove
 // ─────────────────────────────────────────────
 void removeLeaves() {
     int isTerminal[MAX_NODES] = {0};
@@ -264,19 +264,19 @@ void removeLeaves() {
         somethingChanged = 0;
 
         for (int node = 0; node < totalNodes; node++) {
-            if (isTerminal[node]) continue; // never remove a terminal
+            if (isTerminal[node]) continue; // never remove terminal
 
-            // count how many edges this node has in the Steiner graph
+            // count how many edges this node has in Steiner graph
             int edgeCount = 0;
             for (int j = 0; j < totalNodes; j++)
                 if (steinerGraph[node][j]) edgeCount++;
 
-            // if it's a leaf (only 1 connection) and not a terminal, remove it
+            // if leaf (only 1 connection) and not terminal, remove
             if (edgeCount == 1) {
                 for (int j = 0; j < totalNodes; j++)
                     steinerGraph[node][j] = steinerGraph[j][node] = 0;
 
-                somethingChanged = 1; // removing it might create new leaves, so check again
+                somethingChanged = 1; // removing might create new leaves, check again
             }
         }
     }
