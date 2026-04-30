@@ -2,6 +2,11 @@
 
 
 #include <stdio.h>
+#include <limits.h>
+#include <stdbool.h>
+#include <stdlib.h>
+
+
 
 // =============================================
 // STEINER TREE APPROXIMATION (KMB Algorithm)
@@ -11,8 +16,39 @@
 //   3. Expand the MST back into the original graph
 
 #define MAX_NODES 100          
-#define INFINITY  1000000000   
+#define INFINITY INT_MAX
 
+
+typedef struct {
+    int src;
+    int dest;
+    int weight;
+} Edge;
+
+typedef struct {
+    int V;
+    int E;
+    Edge* edges;
+    bool* is_required;  // true = Terminal, false = Steiner Point
+} Graph;
+
+Graph* createGraph(int V, int E) {
+    Graph* graph = (Graph*)malloc(sizeof(Graph));
+    graph->V = V;
+    graph->E = E;
+    graph->edges = (Edge*)malloc(E * sizeof(Edge));
+    graph->is_required = (bool*)calloc(V, sizeof(bool));
+    return graph;
+}
+
+void freeGraph(Graph* graph) {
+    if (graph == NULL) return;
+    if (graph->edges != NULL) free(graph->edges);
+    if (graph->is_required != NULL) free(graph->is_required);
+    free(graph);
+}
+
+// ===============================================================================================
 int totalNodes;                          // how many nodes are in the graph
 int originalGraph[MAX_NODES][MAX_NODES]; // input graph 
 int steinerGraph[MAX_NODES][MAX_NODES];  // resulting Steiner tree edges
@@ -24,6 +60,28 @@ int mstParent[MAX_NODES];     // stores parent of each node in MST
 
 // stores the shortest distance between every pair of terminal nodes
 int terminalDistances[MAX_NODES][MAX_NODES];
+
+void loadGraph(Graph* graph) {
+    totalNodes = graph->V;
+
+    for (int i = 0; i < totalNodes; i++)
+        for (int j = 0; j < totalNodes; j++)
+            originalGraph[i][j] = 0;
+
+    for (int i = 0; i < graph->E; i++) {
+        int src    = graph->edges[i].src;
+        int dest   = graph->edges[i].dest;
+        int weight = graph->edges[i].weight;
+        originalGraph[src][dest] = weight;
+        originalGraph[dest][src] = weight;
+    }
+
+    totalTerminals = 0;
+    for (int v = 0; v < graph->V; v++)
+        if (graph->is_required[v])
+            terminalNodes[totalTerminals++] = v;
+}
+
 
 
 // ============================== DIJKSTRA'S ==============================
@@ -62,9 +120,11 @@ void findShortestPaths(int startNode, int shortestDist[], int cameFrom[]) {
             int newDist = shortestDist[currentNode] + edgeWeight;
 
             // if theres an edge AND this new path is shorter, update
-            if (edgeWeight > 0 && newDist < shortestDist[neighbor]) {
+            if (edgeWeight > 0 &&
+                !alreadyVisited[neighbor] &&
+                newDist <= shortestDist[neighbor]) {
                 shortestDist[neighbor] = newDist;
-                cameFrom[neighbor] = currentNode; // came from currentNode
+                cameFrom[neighbor] = currentNode;
             }
         }
     }
@@ -190,7 +250,7 @@ void buildSteinerTree() {
 // nodes might be "dangling" (only one connection).
 // They add cost but connect nothing useful, so remove them.
 // ─────────────────────────────────────────────
-void removeUselessLeaves() {
+void removeLeaves() {
     int isTerminal[MAX_NODES] = {0};
 
     // mark which nodes are terminals
@@ -244,45 +304,38 @@ void printSteinerTree() {
 
 
 int main() {
-    int totalEdges;
+    int V = 5;
+    int E = 8;
+    Graph* graph = createGraph(V, E);
 
-    printf("Enter number of nodes: ");
-    scanf("%d", &totalNodes);
+    // set Required or Steiner
+    graph->is_required[0] = true;
+    graph->is_required[1] = true;
+    graph->is_required[2] = true;
+    graph->is_required[3] = true;
+    graph->is_required[4] = false; //  Steiner point in middle
 
-    // initialize graph with no edges
-    for (int i = 0; i < totalNodes; i++)
-        for (int j = 0; j < totalNodes; j++)
-            originalGraph[i][j] = 0;
+    // perimeter edges of weight 10
+    graph->edges[0] = (Edge){0, 1, 10};
+    graph->edges[1] = (Edge){1, 2, 10};
+    graph->edges[2] = (Edge){2, 3, 10};
+    graph->edges[3] = (Edge){3, 0, 10};
 
-    printf("Enter number of edges: ");
-    scanf("%d", &totalEdges);
+    // to the center (weight 5)
+    graph->edges[4] = (Edge){0, 4, 5};
+    graph->edges[5] = (Edge){1, 4, 5};
+    graph->edges[6] = (Edge){2, 4, 5};
+    graph->edges[7] = (Edge){3, 4, 5};
 
-    printf("Enter each edge as: node1 node2 weight\n");
-    for (int i = 0; i < totalEdges; i++) {
-        int nodeA, nodeB, weight;
-        scanf("%d %d %d", &nodeA, &nodeB, &weight);
-
-        // store in both directions, graph undirected
-        originalGraph[nodeA][nodeB] = weight;
-        originalGraph[nodeB][nodeA] = weight;
-    }
-
-    printf("Enter number of required nodes (nodes that MUST be connected): ");
-    scanf("%d", &totalTerminals);
-
-    printf("Enter required node numbers:\n");
-    for (int i = 0; i < totalTerminals; i++) {
-        scanf("%d", &terminalNodes[i]);
-    }
-
+    loadGraph(graph); 
     // ============================== Run algo  ==============================
 
     buildTerminalDistanceGraph(); // shortest paths between terminals
     buildMinimumSpanningTree(terminalDistances, totalTerminals); // MST on terminals
     buildSteinerTree();           // expand MST back to original graph
-    removeUselessLeaves();        //  clean up dangling non-terminal nodes
-
+    removeLeaves();        //  clean up dangling non-terminal nodes
     printSteinerTree();           // Output
 
+    freeGraph(graph);
     return 0;
 }
