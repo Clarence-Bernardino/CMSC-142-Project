@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <limits.h>
+#include <time.h>
 
 // structure to represent an edge
 typedef struct {
@@ -212,6 +213,9 @@ int bruteForceSteinerTree(Graph* graph) {
 // ===== Brute Force Functions End =====
 
 int main() {
+    clock_t start_time, end_time;
+    double time_spent;
+
     // test Case 1: The Square Graph (SEE PDF PAGE 6) 
     // vertices 0, 1, 2, 3 are Required corners. Vertex 4 is the Steiner center.
     int V = 5;
@@ -237,11 +241,87 @@ int main() {
     graph->edges[6] = (Edge){2, 4, 5};
     graph->edges[7] = (Edge){3, 4, 5};
 
-    printf("--- SANITY CHECK ---\n");
+    printf("--- SANITY CHECK: SQUARE GRAPH ---\n");
     
+    start_time = clock();
     int brute_force_result = bruteForceSteinerTree(graph);
-    printf("Brute Force Result: %d (Expected: 20)\n", brute_force_result);
+    end_time = clock();
+    
+    time_spent = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+    printf("Result: %d (Expected: 20)\n", brute_force_result);
+    printf("Time: %f seconds\n\n", time_spent);
 
     freeGraph(graph); // cleanup
+
+    // TEST CASE: The Chain
+    // A straight line of nodes where every alternating node is a terminal.
+    // T1 -- S1 -- T2 -- S2 -- T3
+    int V_chain = 5;
+    int E_chain = 4;
+    Graph* chainGraph = createGraph(V_chain, E_chain);
+
+    chainGraph->is_required[0] = true;
+    chainGraph->is_required[1] = false;
+    chainGraph->is_required[2] = true;
+    chainGraph->is_required[3] = false;
+    chainGraph->is_required[4] = true;
+
+    chainGraph->edges[0] = (Edge){0, 1, 2};
+    chainGraph->edges[1] = (Edge){1, 2, 2};
+    chainGraph->edges[2] = (Edge){2, 3, 2};
+    chainGraph->edges[3] = (Edge){3, 4, 2};
+    
+    // Expected Optimal Cost: 8
+
+    printf("--- SANITY CHECK: THE CHAIN ---\n");
+    
+    start_time = clock();
+    int brute_force_chain_result = bruteForceSteinerTree(chainGraph);
+    end_time = clock();
+    
+    time_spent = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+    printf("Result: %d (Expected: 8)\n", brute_force_chain_result);
+    printf("Time: %f seconds\n\n", time_spent);
+
+    freeGraph(chainGraph); // cleanup
+
+    // TEST CASE: The Central Hub
+    // 3 Terminals on the outside, connected to a web of 10 Steiner points in the center.
+    int V_hub = 13; 
+    int E_hub = 15;
+    Graph* hubGraph = createGraph(V_hub, E_hub);
+
+    hubGraph->is_required[0] = true;
+    hubGraph->is_required[1] = true;
+    hubGraph->is_required[2] = true;
+
+    for(int i = 3; i < 13; i++) {
+        hubGraph->is_required[i] = false;
+    }
+
+    hubGraph->edges[0] = (Edge){0, 3, 5};
+    hubGraph->edges[1] = (Edge){1, 7, 5};
+    hubGraph->edges[2] = (Edge){2, 12, 5};
+
+    int edge_idx = 3;
+    for(int i = 3; i < 12; i++) {
+        hubGraph->edges[edge_idx++] = (Edge){i, i+1, 10}; 
+    }
+    hubGraph->edges[edge_idx++] = (Edge){3, 7, 12};
+    hubGraph->edges[edge_idx++] = (Edge){7, 12, 15};
+    hubGraph->edges[edge_idx++] = (Edge){3, 12, 20};
+
+    printf("--- SANITY CHECK: THE CENTRAL HUB (10 Steiner Points) ---\n");
+    
+    start_time = clock();
+    int brute_force_hub_result = bruteForceSteinerTree(hubGraph);
+    end_time = clock();
+    
+    time_spent = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+    printf("Result: %d\n", brute_force_hub_result);
+    printf("Time: %f seconds\n\n", time_spent);
+
+    freeGraph(hubGraph);
+
     return 0;
 }
