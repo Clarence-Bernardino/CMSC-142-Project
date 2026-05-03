@@ -181,6 +181,9 @@ int bruteForceSteinerTree(Graph* graph) {
     // total combinations is 2^num_steiner, use bitwise operations for simpler solutions
     int total_combinations = 1 << num_steiner; 
 
+    int valid_trees = 0;
+    int wasted_attempts = 0;
+
     // brute force loop generating the power set
     for (int i = 0; i < total_combinations; i++) {
         
@@ -201,10 +204,19 @@ int bruteForceSteinerTree(Graph* graph) {
         int current_weight = activeSubsetMST(graph);
 
         // update global minimum
-        if (current_weight < min_total_weight) {
-            min_total_weight = current_weight;
+        if (current_weight == INT_MAX) {
+            wasted_attempts++;
+        } else {
+            valid_trees++;
+            if (current_weight < min_total_weight) {
+                min_total_weight = current_weight;
+            }
         }
     }
+
+    printf("  -> Evaluated %d subsets.\n", total_combinations);
+    printf("  -> Valid Trees Found: %d\n", valid_trees);
+    printf("  -> Wasted Attempts (Disconnected Forests): %d\n", wasted_attempts);
 
     free(steiner_indices);
     return min_total_weight;

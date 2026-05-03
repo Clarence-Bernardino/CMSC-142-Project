@@ -18,7 +18,7 @@
 
 #define MAX_NODES 100          
 #define INFINITY INT_MAX
-
+int total_graph_operations = 0; // global counter for total graph operations
 
 typedef struct {
     int src;
@@ -117,6 +117,7 @@ void findShortestPaths(int startNode, int shortestDist[], int cameFrom[]) {
 
         // update distances to neighbors of currentNode
         for (int neighbor = 0; neighbor < totalNodes; neighbor++) {
+            total_graph_operations++; // track edge evaluations
             int edgeWeight = originalGraph[currentNode][neighbor];
             int newDist = shortestDist[currentNode] + edgeWeight;
 
@@ -185,6 +186,7 @@ void buildMinimumSpanningTree(int distanceGraph[MAX_NODES][MAX_NODES], int nodeC
 
         // update neighbors: if connecting through currentNode is cheaper, update
         for (int neighbor = 0; neighbor < nodeCount; neighbor++) {
+            total_graph_operations++; // tracking edge evaluations
             int edgeCost = distanceGraph[currentNode][neighbor];
 
             if (edgeCost != INFINITY && !inMST[neighbor] && edgeCost < cheapestEdge[neighbor]) {
@@ -308,6 +310,7 @@ void runTestCase(Graph* graph, const char* title) {
     clock_t start_time, end_time;
     double time_spent;
 
+    total_graph_operations = 0; // reset counter per test
     printf("\n--- SANITY CHECK: %s ---\n", title);
 
     start_time = clock(); 
@@ -322,6 +325,7 @@ void runTestCase(Graph* graph, const char* title) {
     end_time = clock();    
 
     time_spent = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+    printf("  -> Total Graph Operations (Edge Lookups): %d\n", total_graph_operations);
     printf("Time: %f seconds\n", time_spent);
 
     freeGraph(graph);
