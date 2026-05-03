@@ -5,6 +5,7 @@
 #include <limits.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <time.h> 
 
 
 
@@ -303,39 +304,100 @@ void printSteinerTree() {
 }
 
 
+void runTestCase(Graph* graph, const char* title) {
+    clock_t start_time, end_time;
+    double time_spent;
+
+    printf("\n--- SANITY CHECK: %s ---\n", title);
+
+    start_time = clock(); 
+
+    loadGraph(graph);
+    buildTerminalDistanceGraph();
+    buildMinimumSpanningTree(terminalDistances, totalTerminals);
+    buildSteinerTree();
+    removeLeaves();
+    printSteinerTree();
+
+    end_time = clock();    
+
+    time_spent = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+    printf("Time: %f seconds\n", time_spent);
+
+    freeGraph(graph);
+}
+
 int main() {
+    // TEST CASE 1: Square Graph
     int V = 5;
     int E = 8;
     Graph* graph = createGraph(V, E);
 
-    // set Required or Steiner
     graph->is_required[0] = true;
     graph->is_required[1] = true;
     graph->is_required[2] = true;
     graph->is_required[3] = true;
-    graph->is_required[4] = false; //  Steiner point in middle
+    graph->is_required[4] = false;
 
-    // perimeter edges of weight 10
     graph->edges[0] = (Edge){0, 1, 10};
     graph->edges[1] = (Edge){1, 2, 10};
     graph->edges[2] = (Edge){2, 3, 10};
     graph->edges[3] = (Edge){3, 0, 10};
 
-    // to the center (weight 5)
     graph->edges[4] = (Edge){0, 4, 5};
     graph->edges[5] = (Edge){1, 4, 5};
     graph->edges[6] = (Edge){2, 4, 5};
     graph->edges[7] = (Edge){3, 4, 5};
 
-    loadGraph(graph); 
-    // ============================== Run algo  ==============================
+    runTestCase(graph, "SQUARE GRAPH");
 
-    buildTerminalDistanceGraph(); // shortest paths between terminals
-    buildMinimumSpanningTree(terminalDistances, totalTerminals); // MST on terminals
-    buildSteinerTree();           // expand MST back to original graph
-    removeLeaves();        //  clean up dangling non-terminal nodes
-    printSteinerTree();           // Output
 
-    freeGraph(graph);
+    // TEST CASE 2: Chain
+    int V_chain = 5;
+    int E_chain = 4;
+    Graph* chainGraph = createGraph(V_chain, E_chain);
+
+    chainGraph->is_required[0] = true;
+    chainGraph->is_required[1] = false;
+    chainGraph->is_required[2] = true;
+    chainGraph->is_required[3] = false;
+    chainGraph->is_required[4] = true;
+
+    chainGraph->edges[0] = (Edge){0, 1, 2};
+    chainGraph->edges[1] = (Edge){1, 2, 2};
+    chainGraph->edges[2] = (Edge){2, 3, 2};
+    chainGraph->edges[3] = (Edge){3, 4, 2};
+
+    runTestCase(chainGraph, "THE CHAIN");
+
+
+    // TEST CASE 3: Central Hub
+    int V_hub = 13;
+    int E_hub = 15;
+    Graph* hubGraph = createGraph(V_hub, E_hub);
+
+    hubGraph->is_required[0] = true;
+    hubGraph->is_required[1] = true;
+    hubGraph->is_required[2] = true;
+
+    for (int i = 3; i < 13; i++) {
+        hubGraph->is_required[i] = false;
+    }
+
+    hubGraph->edges[0] = (Edge){0, 3, 5};
+    hubGraph->edges[1] = (Edge){1, 7, 5};
+    hubGraph->edges[2] = (Edge){2, 12, 5};
+
+    int edge_idx = 3;
+    for (int i = 3; i < 12; i++) {
+        hubGraph->edges[edge_idx++] = (Edge){i, i + 1, 10};
+    }
+
+    hubGraph->edges[edge_idx++] = (Edge){3, 7, 12};
+    hubGraph->edges[edge_idx++] = (Edge){7, 12, 15};
+    hubGraph->edges[edge_idx++] = (Edge){3, 12, 20};
+
+    runTestCase(hubGraph, "THE CENTRAL HUB (10 Steiner Points)");
+
     return 0;
 }
